@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Premium ဝယ်ယူမှု</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: auto;
+        }
+        h2 {
+            color: #007bff;
+        }
+        .price-box {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #fff;
+        }
+        .price-box:hover {
+            background-color: #f0f0f0;
+        }
+        .selected {
+            background-color: #d1ecf1;
+            border-color: #17a2b8;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .status {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #28a745;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Telegram Premium ဝယ်ယူမှု</h2>
+        
+        <div class="price-box" onclick="selectPlan(7800, '1 Month')">
+            <span>1 Month</span> <strong>15,000 MMK</strong>
+        </div>
+        <div class="price-box" onclick="selectPlan(46800, '6 Months')">
+            <span>6 Months</span> <strong>76,800 MMK</strong>
+        </div>
+        <div class="price-box" onclick="selectPlan(93600, '12 Months')">
+            <span>12 Months</span> <strong>133,000 MMK</strong>
+        </div>
+
+        <h3>ငွေလွဲရန်</h3>
+        <p><strong>Kpay/WavePay:</strong> 09786284670 (D H M K)</p>
+
+        <input type="text" id="txn_id" placeholder="ငွေလွဲ ပြေစာ/လုပ်ငန်းစဥ်နံပါတ် (နောက်ဆုံး 6 လုံး)" maxlength="6">
+        <input type="text" id="tg_username" placeholder="Telegram Username (@username)">
+
+        <button onclick="confirmPurchase()">Buy Now</button>
+
+        <p class="status" id="statusMessage"></p>
+    </div>
+
+    <script>
+        let selectedPlan = null;
+        let selectedPrice = null;
+        const SERVER_URL = "https://telegram-premium-server.herokuapp.com";
+        const MAX_RETRIES = 3; // Maximum retry attempts
+        const RETRY_DELAY = 2000; // Retry delay in milliseconds (2 seconds)
+
+        function selectPlan(price, plan) {
+            selectedPlan = plan;
+            selectedPrice = price;
+            document.querySelectorAll('.price-box').forEach(el => el.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+        }
+
+        async function confirmPurchase() {
+            const txnId = document.getElementById("txn_id").value;
+            const tgUsername = document.getElementById("tg_username").value;
+            const statusMessage = document.getElementById("statusMessage");
+
+            if (!selectedPlan) {
+                statusMessage.innerHTML = "❌ သင်ရွေးချယ်မည့် Telegram Premium Plan ကို သေချာ ရွေးပါ။";
+                return;
+            }
+            if (txnId.trim() === "" || tgUsername.trim() === "") {
+                statusMessage.innerHTML = "❌ ငွေလွဲ ပြေစာ/လုပ်ငန်းစဥ်နံပါတ် နှင့် Telegram Username ကို ဖြည့်ပါ။";
+                return;
+            }
+            if (txnId.length !== 6 || !/^\d+$/.test(txnId)) {
+                statusMessage.innerHTML = "❌ ငွေလွဲ ပြေစာ/လုပ်ငန်းစဥ်နံပါတ် သည် နောက်ဆုံး 6 လုံးသာ ဖြစ်ရပါမည်။";
+                return;
+            }
+
+            // Send purchase data to Server
+            const purchaseData = {
+                plan: selectedPlan,
+                amount: selectedPrice,
+                txn_id: txnId,
+                tg_username: tgUsername,
+                device_id: "UNIQUE_DEVICE_ID" // Replace with actual Device ID
+            };
+
+            // Retry Mechanism
+            let retryCount = 0;
+            const sendRequest = async () => {
+                try {
+                    const response = await fetch(`${SERVER_URL}/purchase`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(purchaseData)
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        statusMessage.innerHTML = "✅ ဝယ်ယူမှု အောင်မြင်ပါသည်။ Admin အတည်ပြုသည့်အထိ စောင့်ပါ။";
+                    } else {
+                        statusMessage.innerHTML = "❌ ဝယ်ယူမှု မအောင်မြင်ပါ။ နောက်ထပ် ကြိုးစားကြည့်ပါ။";
+                    }
+                } catch (error) {
+                    if (retryCount < MAX_RETRIES) {
+                        retryCount++;
+                        statusMessage.innerHTML = `❌ Server Error: Retrying (${retryCount}/${MAX_RETRIES})...`;
+                        setTimeout(sendRequest, RETRY_DELAY);
+                    } else {
+                        statusMessage.innerHTML = "❌ Server Error: Please try again later.";
+                    }
+                }
+            };
+
+            sendRequest();
+        }
+    </script>
+
+</body>
+</html>

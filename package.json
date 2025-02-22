@@ -1,0 +1,46 @@
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+
+app.use(bodyParser.json());
+
+let purchases = [];
+
+app.post('/purchase', (req, res) => {
+    const purchase = req.body;
+    purchase.id = purchases.length + 1;
+    purchase.status = 'Pending';
+    purchases.push(purchase);
+    res.json({ success: true });
+});
+
+app.get('/purchases', (req, res) => {
+    res.json({ purchases });
+});
+
+app.post('/approve/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const purchase = purchases.find(p => p.id === id);
+    if (purchase) {
+        purchase.status = 'Approved';
+        res.json({ success: true });
+    } else {
+        res.json({ success: false });
+    }
+});
+
+app.post('/reject/:id', (req, res) => {
+    const id = parseInt(req.params.id);
+    const purchase = purchases.find(p => p.id === id);
+    if (purchase) {
+        purchase.status = 'Rejected';
+        res.json({ success: true });
+    } else {
+        res.json({ success: false });
+    }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});

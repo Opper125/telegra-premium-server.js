@@ -120,7 +120,7 @@
         // Fetch Purchases from Server
         async function fetchPurchases() {
             try {
-                const response = await fetch("https://telegram-premium-server.herokuapp.com/purchases");
+                const response = await fetch("https://enigmatic-depths-86330-6f6e48e924cc.herokuapp.com/");
                 const data = await response.json();
                 updatePurchaseTable(data.purchases);
             } catch (error) {
